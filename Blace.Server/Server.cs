@@ -1,6 +1,7 @@
 ﻿using Blace.Server.Services;
 using Blace.Shared;
 using Blace.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Sentry;
 
@@ -47,7 +48,7 @@ public class Server : Hub<IClient>, IServer
     public Task<Player> GetMe() => Task.FromResult(_playerService[Context]);
     public Task<Place> GetPlace() => Task.FromResult(_placeService.Place);
     public Task<uint> GetCooldown() => Task.FromResult(_placeService.Cooldown);
-    
+
     public Task PlaceTile(int x, int y, byte color)
     {
         _placeService.SetPixel(x, y, color, Context.GetId());
@@ -72,6 +73,7 @@ public class Server : Hub<IClient>, IServer
         }
     }
 
+    [Authorize(Constants.AdminPolicy)]
     public async Task DeleteTiles(Tile[] tiles)
     {
         await _placeService.DeleteTiles(tiles);

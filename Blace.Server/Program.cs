@@ -1,10 +1,8 @@
 using Blace.Server;
 using Blace.Server.Services;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Identity.Web;
-using Sentry;
+using Constants = Blace.Server.Constants;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -34,8 +32,17 @@ builder.WebHost.UseSentry(o =>
 builder.Services
     .AddSignalR(o => o.MaximumReceiveMessageSize = null)
     .AddMessagePackProtocol();
-builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration);
-    
+
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddAuthorization(o => o.AddPolicy(Constants.AdminPolicy, p => p.RequireAssertion(_ => true)));
+else
+{
+    Environment.SetEnvironmentVariable("WEBSITE_AUTH_DEFAULT_PROVIDER", "AAD");
+    builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
+        .EnableTokenAcquisitionToCallDownstreamApi();
+    builder.Services.AddAuthorization(o => o.AddPolicy(Constants.AdminPolicy, p => p.RequireClaim("roles", "Admin")));
+}
+
 WebApplication app = builder.Build();
 
 await app.Services.GetRequiredService<PlaceRepository>().Initialize();
@@ -43,16 +50,6 @@ await app.Services.GetRequiredService<PlaceService>().Initialize();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.Use(async (context, next) =>
-    {
-        if (!context.Request.Path.StartsWithSegments("/Game"))
-        {
-            if (!context.Request.Headers.ContainsKey("X-MS-CLIENT-PRINCIPAL-NAME"))
-                return;
-        }
-        await next.Invoke();
-    });
-
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
@@ -64,22 +61,20 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseCors(corsPolicyBuilder =>
+app.UseCors(cors => cors
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
+if (!app.Environment.IsDevelopment())
 {
-    corsPolicyBuilder
-        .AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader();
-});
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapBlazorHub();
-app.MapFallbackToPage("/_Host")
-    .RequireAuthorization();
+app.MapFallbackToPage("/_Host");
 
-app.MapHub<Server>("/Game", o =>
-{
-    o.Transports = HttpTransportType.WebSockets;
-    
-});
+app.MapHub<Server>("/Game");
 
 app.Run();
