@@ -20,7 +20,7 @@ public class HubService
                     ? "http://localhost:7151/Game"
                     : env.BaseAddress.Contains("192.168.0.5")
                         ? "http://192.168.0.5:7151/Game"
-                        : "https://Blaceserver20220918222136.azurewebsites.net/Game",
+                        : "https://blace-server.azurewebsites.net/Game",
                 o => o.AccessTokenProvider = () => Task.FromResult(UserId.ToString())!)
             .AddMessagePackProtocol()
             .WithAutomaticReconnect()
@@ -31,7 +31,7 @@ public class HubService
     public HubConnection Connection { get; }
     public IServer Server { get; }
     public Guid UserId { get; private set; }
-    
+
     public async Task Start()
     {
         foreach (IClient client in _serviceProvider.GetRequiredService<IEnumerable<IClient>>())
