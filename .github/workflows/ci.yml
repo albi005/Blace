@@ -1,41 +1,44 @@
 name: Build and deploy
+
 on:
   push:
     branches:
     - main
-    - ci
+
 env:
   CONFIGURATION: Release
   DOTNET_NOLOGO: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
+
     - name: Install workload
       run: dotnet workload install wasm-tools
+
     - name: Restore packages
       run: dotnet restore
+
     - name: Build
       run: dotnet build --no-restore
+
     - name: Publish
       run: dotnet publish
-    - name: Deploy Server 2
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: Blaceserver20220918222136
-        publish-profile: ${{ secrets.SERVER2 }}
-        package: Blace.Server/bin/Release/net6.0/publish
+
     - name: Deploy Server
       uses: azure/webapps-deploy@v2
       with:
-        app-name: Blace-server
-        publish-profile: ${{ secrets.Blace_server_FFFF }}
+        app-name: blace-server
+        publish-profile: ${{ secrets.SERVER_PUBLISH_PROFILE }}
         package: Blace.Server/bin/Release/net6.0/publish
+
     - name: Deploy Client
       uses: Azure/static-web-apps-deploy@v1
       with:
