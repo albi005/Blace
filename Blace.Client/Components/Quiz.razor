@@ -1,0 +1,95 @@
+﻿@using Blace.Shared.Models
+@using Blace.Shared
+@inherits HubClientComponent
+@inject IServer Server
+
+<div class="m-3">
+    @if (!_hasSelectedName)
+    {
+        <SelectNamePage OnNameSet="() => _hasSelectedName = true"/>
+    }
+    else
+    {
+        @if (_question != null)
+        {
+            if (_question.Image != null)
+            {
+                <div class="d-flex justify-content-center mb-3">
+                    <img
+                        style="max-height: 50vh"
+                        class="img-fluid rounded"
+                        src="@_question.Image" alt=""/>
+                </div>
+            }
+            <h3 class="question mb-3">
+                @_question.Prompt
+            </h3>
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                @foreach (Answer i in _question.RandomizedAnswers)
+                {
+                    Answer answer = i;
+                    string color = _showAnswer
+                        ? answer == _question.CorrectAnswer
+                            ? "success"
+                            : answer == _selectedAnswer
+                                ? "danger"
+                                : "light"
+                        : _hasAnswered && answer != _selectedAnswer
+                            ? "light"
+                            : "primary";
+                    <div class="col">
+                        <button
+                            class="@($"btn btn-{color}") w-100 opacity-100"
+                            disabled="@_showAnswer"
+                            @onclick="() => SelectAnswer(answer)">
+                            @answer.Text
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-center p-5">
+                <div class="spinner-border text-white" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+    }
+    <div class="mt-5">
+        <Scoreboard/>
+    </div>
+</div>
+
+
+@code
+{
+    private bool _hasSelectedName;
+    private Question? _question;
+    private bool _hasAnswered;
+    private Answer? _selectedAnswer;
+    private bool _showAnswer;
+
+    public override Task UpdateQuestion(Question question)
+    {
+        _question = question;
+        _hasAnswered = false;
+        _showAnswer = false;
+        return StateHasChangedTask();
+    }
+
+    public override Task ShowAnswer()
+    {
+        _showAnswer = true;
+        return StateHasChangedTask();
+    }
+
+    private async void SelectAnswer(Answer answer)
+    {
+        _hasAnswered = true;
+        _selectedAnswer = answer;
+
+        await Server.AnswerQuestion(answer == _question!.CorrectAnswer);
+    }
+}

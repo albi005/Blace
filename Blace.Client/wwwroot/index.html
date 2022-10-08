@@ -1,0 +1,43 @@
+<!--
+Made by Albert Ragány-Németh
+
+https://github.com/albi005
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Blace</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+
+<body>
+<div class="background"></div>
+
+<div id="app">
+    <div class="d-flex justify-content-center p-5">
+        <div class="spinner-border text-white" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+<script src="_framework/blazor.webassembly.js"></script>
+<script>
+    document.addEventListener('keydown', function (e){
+        DotNet.invokeMethod('Blace.Client', 'OnKeyDown', e.key);
+    });
+</script>
+</body>
+
+</html>

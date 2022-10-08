@@ -1,0 +1,80 @@
+﻿@page "/place"
+@using Blace.Shared.Models
+@inject PlaceService PlaceService
+@inject PlaceRepository PlaceRepository
+@inject IJSRuntime Js
+
+<h2>Place</h2>
+
+<div class="mb-3">
+  <label for="cooldown" class="form-label">Cooldown</label>
+  <input type="number" class="form-control" id="cooldown" value="@PlaceService.Cooldown" @onchange="UpdateCooldown">
+</div>
+
+<button class="btn btn-success" @onclick="CreatePlace">
+    <span class="oi oi-plus" aria-hidden="true"></span>
+</button>
+
+<table class="table table-bordered table-hover">
+    <thead>
+    <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Created</th>
+        <th scope="col"></th>
+        <th scope="col"></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (PlaceInfo tmp in PlaceRepository.Places)
+    {
+        PlaceInfo place = tmp;
+        <tr class="@(tmp.Id == PlaceService.Place.Id ? "table-primary" : "")">
+            <td>
+                <input type="text" @bind="place.Title" />
+            </td>
+            <td>@tmp.CreatedTimeUtc</td>
+            @if (tmp.Id != PlaceService.Place.Id)
+            {
+            <td>
+                <button class="btn btn-success" @onclick="() => SelectPlace(place)">
+                    <span class="oi oi-chevron-right" aria-hidden="true"></span>
+                </button>
+            </td>
+            <td>
+                <button class="btn btn-danger" @onclick="() => DeletePlace(place)">
+                    <span class="oi oi-trash" aria-hidden="true"></span>
+                </button>
+            </td>
+            }
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    
+    private async Task CreatePlace()
+    {
+        await PlaceService.CreateNewPlace();
+    }
+    
+    private async void SelectPlace(PlaceInfo place)
+    {
+        await PlaceService.SetPlace(place.Id);
+        StateHasChanged();
+    }
+
+    private async void DeletePlace(PlaceInfo place)
+    {
+        if (await Js.InvokeAsync<bool>("confirm", "Delete?"))
+            await PlaceService.Delete(place);
+        StateHasChanged();
+    }
+
+    private async Task UpdateCooldown(ChangeEventArgs e)
+    {
+        if (uint.TryParse(e.Value?.ToString(), out uint cooldown))
+            await PlaceService.SetCooldown(cooldown);
+    }
+
+}

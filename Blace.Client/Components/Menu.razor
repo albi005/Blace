@@ -1,0 +1,18 @@
+﻿<div class="menu p-2 @(IsOpen ? "open" : "")">
+    <CascadingValue Value="@CloseMenu" Name="@nameof(CloseMenu)" TValue="EventCallback">
+        @ChildContent
+    </CascadingValue>
+</div>
+
+@code
+{
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback CloseMenu { get; set; }
+}

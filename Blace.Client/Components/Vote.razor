@@ -1,0 +1,87 @@
+﻿@using Blace.Shared
+@using Blace.Shared.Models
+@using System.Globalization
+@inherits HubClientComponent
+@inject IServer Server
+
+<style>
+    .small-column {
+        min-height: 10px;
+        background-color: #fff8;
+        animation: 1s ease-out 0s 1 scaleUp;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="p-3" style="position: absolute; width: 100%; height: 100%">
+    @if (_result == null)
+    {
+        <h3 class="question mb-3">How are you feeling?</h3>
+
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            @for (byte i = 0; i < _options.Length; i++)
+            {
+                byte index = i;
+                VoteOption option = _options[i];
+                <div class="col">
+                    <button
+                        class="btn answer"
+                        @onclick="@(() => { _vote = index; Server.Vote(index); })"
+                        disabled="@(_vote == index)">
+                        <img src="@option.Image" alt="">
+                        <b>
+                            @option.Name
+                        </b>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="container-sm" style="height: 100%">
+            <div class="row text-center" style="height: 100%">
+                @for (byte i = 0; i < _options.Length; i++)
+                {
+                    VoteOption option = _options[i];
+                    <div class="col d-flex flex-column justify-content-end gap-3 text-white">
+                        @_result[i]
+                        <div
+                            class="small-column"
+                            style="height: calc(calc(100% - 25vw - 40px) * @(((float)_result[i] / _max).ToString(CultureInfo.InvariantCulture))">
+                        </div>
+                        <div
+                            style="min-width: 0"
+                            class="answer">
+                            <img src="@option.Image" alt="">
+                            <b>
+                                @option.Name
+                            </b>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly VoteOption[] _options =
+    {
+        new("Option 1", "img/qr-code.svg"),
+        new("Option 2", "img/qr-code.svg"),
+        new("Option 3", "img/qr-code.svg"),
+        new("Option 4", "img/qr-code.svg"),
+    };
+
+    private int _vote = -1;
+    private int[]? _result;
+    private int _max;
+
+    public override Task ShowVoteResult(int[] result)
+    {
+        _result = result;
+        _max = _result.Max();
+        return StateHasChangedTask();
+    }
+}

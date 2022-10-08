@@ -1,0 +1,342 @@
+﻿@using SkiaSharp.Views.Blazor
+@using SkiaSharp
+@using Blace.Shared
+@using Blace.Shared.Models
+@using Blace.Client.Services
+@inherits HubClientComponent
+@inject IServer Server
+@inject CooldownService CooldownService
+@inject NavigationManager NavigationManager
+@inject EventService EventService
+@inject PlaceService PlaceService
+@inject PlayerService PlayerService
+
+<style>
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+    }
+
+    .color-box {
+        width: 40px;
+        height: 40px;
+        display: inline-block;
+        border-style: solid;
+        border-color: gray;
+        border-width: 2px;
+        transition-duration: 400ms;
+    }
+
+    .color-box-selected {
+        border-color: black;
+        border-radius: 12px;
+    }
+
+    body {
+        overflow-y: hidden;
+    }
+</style>
+
+<SKGLView
+    @ref="_view"
+    OnPaintSurface="OnPaintSurface"
+    IgnorePixelScaling="true"
+    EnableRenderLoop="true"
+    @onpointerdown="OnPointerDown"
+    @onpointermove="OnPointerMove"
+    @onpointerup="OnPointerUp"
+    @onpointerout="OnPointerUp"
+    @onwheel="OnWheel"/>
+
+<Menu IsOpen="_openMenu == OpenMenu.Draw" CloseMenu="() => _openMenu = OpenMenu.None">
+    <div class="d-flex justify-content-center flex-wrap gap-2">
+        @for (byte i = 0; i < PlaceService.Colors.Count; i++)
+        {
+            byte curr = i;
+            <div
+                class="color-box @(_selectedColor == i ? "color-box-selected" : "")"
+                style="background-color: @_stringColors[i]"
+                @onclick="(_ => SelectColor(curr))">
+            </div>
+        }
+    </div>
+    <div class="d-flex justify-content-center mt-2 gap-2">
+        <CloseButton/>
+        <button class="btn btn-primary" disabled="@(!_canPlace && !_isAdmin)" @onclick="PlaceTile">
+            @if (_canPlace || _isAdmin)
+            {
+                <span class="oi oi-check" aria-hidden="true"></span>
+            }
+            else
+            {
+                @(_remainingTime.TotalSeconds < 60
+                    ? _remainingTime.Seconds
+                    : _remainingTime.ToString("mm':'ss"))
+            }
+        </button>
+    </div>
+</Menu>
+
+@if (_isAdmin)
+{
+    <Menu IsOpen="_openMenu == OpenMenu.Revert" CloseMenu="() => _openMenu = OpenMenu.None">
+        <RevertMenu @ref="_revertMenu"/>
+    </Menu>
+}
+
+@if (!_isDisplay)
+{
+    <div class="d-flex justify-content-center p-2 gap-2 off-screen-bottom @If(_openMenu == OpenMenu.None, "open")">
+        @if (_isAdmin)
+        {
+            <button class="btn btn-danger" @onclick="() => _openMenu = OpenMenu.Revert">
+                <span class="oi oi-ban"></span>
+            </button>
+        }
+        <button class="btn btn-primary" @onclick="() => _openMenu = OpenMenu.Draw">
+            <span class="oi oi-pencil" aria-hidden="true"></span>
+        </button>
+    </div>
+}
+
+<div class="text-white opacity-75 m-2" style="pointer-events: none; width: 33%">
+    <span class="oi oi-person" aria-hidden="true"></span>
+    @PlayerService.Players.Count
+
+    @if (_isDisplay)
+    {
+        <h1 style="font-size: 96px">Blace</h1>
+        <p style="font-size: 36px">Open <b>csaka.de</b> in your browser or scan the QR code and <b>draw something!</b></p>
+        <img src="img/qr-code.svg" style="width: 80%" class="mt-5" alt="csaka.de QR code"/>
+    }
+</div>
+
+@code
+{
+    private bool _isAdmin;
+    private bool _isDisplay;
+
+    private SKGLView? _view;
+    private RevertMenu? _revertMenu;
+
+    private List<string> _stringColors = null!;
+    private byte _selectedColor;
+
+    private readonly SKPaint _whiteFill = new() { Color = SKColors.White };
+    private readonly SKPaint _fillPaint = new();
+    private readonly SKPaint _outlinePaint = new() { IsStroke = true, StrokeWidth = .1f };
+
+    private TimeSpan _remainingTime;
+    private bool _canPlace;
+
+    private OpenMenu _openMenu = OpenMenu.None;
+
+    protected override void OnInitialized()
+    {
+        _stringColors = new(PlaceService.Colors.Count);
+        foreach (uint color in PlaceService.Colors)
+        {
+            _stringColors.Add("#" + color.ToString("X")[2..]);
+        }
+        SelectColor(0);
+
+        _isAdmin = NavigationManager.Uri.Contains("b4f3d864-5792-4ec8-a856-ed6d1d857479");
+        _isDisplay = NavigationManager.Uri.Contains("info");
+
+        CooldownService.RemainingTimeChanged += OnRemainingTimeChanged;
+        EventService.KeyDown += OnKeyDown;
+        OnRemainingTimeChanged();
+    }
+
+    private void OnRemainingTimeChanged()
+    {
+        _remainingTime = CooldownService.RemainingTime;
+        _canPlace = _remainingTime <= TimeSpan.Zero;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnPaintSurface(SKPaintGLSurfaceEventArgs args)
+    {
+        SKCanvas canvas = args.Surface.Canvas;
+        canvas.Clear();
+
+        float x = PlaceService.Xf;
+        float y = PlaceService.Yf;
+        float scale = PlaceService.Scale;
+        int vw = args.Info.Width;
+        int vh = args.Info.Height;
+
+        canvas.Translate(vw / 2f - scale * x, vh / 2f - scale * y);
+        canvas.Scale(scale);
+        canvas.DrawBitmap(PlaceService.Bitmap, 0, 0);
+
+        if (_openMenu == OpenMenu.None) return;
+        canvas.DrawRect((int)x, (int)y, 1, 1, _fillPaint);
+
+        _outlinePaint.Color = new SKColor(_selectedColor == 3 ? 0xAAAAAAAA : 0)
+            .WithAlpha(
+                IsInsideCanvas &&
+                PlaceService.GetData((int)x, (int)y) != PlaceService.Colors[_selectedColor]
+                    ? (byte)255
+                    : (byte)127);
+        canvas.DrawRoundRect((int)x, (int)y, 1, 1, .1f, .1f, _outlinePaint);
+    }
+
+    private float _startX;
+    private float _startY;
+    private float _startClientX;
+    private float _startClientY;
+    private float _startDist;
+    private float _startScale;
+    private readonly List<Pointer> _pointers = new();
+
+    private void OnPointerDown(PointerEventArgs e)
+    {
+        _pointers.Add(new(e.PointerId, e.ClientX, e.ClientY));
+        OnPointerCountChanged();
+    }
+
+    private void OnPointerMove(PointerEventArgs e)
+    {
+        if (_pointers.Count == 0) return;
+        Pointer pointer = _pointers.First(p => p.Id == e.PointerId);
+        pointer.X = e.ClientX;
+        pointer.Y = e.ClientY;
+
+        float avgX = (float)_pointers.Average(p => p.X);
+        float avgY = (float)_pointers.Average(p => p.Y);
+        float deltaX = _startClientX - avgX;
+        float deltaY = _startClientY - avgY;
+        PlaceService.Xf = _startX + deltaX / PlaceService.Scale;
+        PlaceService.Yf = _startY + deltaY / PlaceService.Scale;
+
+        if (_pointers.Count != 2) return;
+        double x = _pointers[0].X - _pointers[1].X;
+        double y = _pointers[0].Y - _pointers[1].Y;
+        float dist = (float)Math.Sqrt(x * x + y * y);
+        float percentChange = dist / _startDist;
+        PlaceService.Scale = Math.Clamp(_startScale * percentChange, 3, 48);
+    }
+
+    private void OnPointerUp(PointerEventArgs e)
+    {
+        Pointer? pointer = _pointers.FirstOrDefault(x => x.Id == e.PointerId);
+        if (pointer == null) return;
+        _pointers.Remove(pointer);
+        OnPointerCountChanged();
+    }
+
+    private void OnPointerCountChanged()
+    {
+        if (_pointers.Count == 0) return;
+        _startX = PlaceService.Xf;
+        _startY = PlaceService.Yf;
+        _startClientX = (float)_pointers.Average(p => p.X);
+        _startClientY = (float)_pointers.Average(p => p.Y);
+
+        if (_pointers.Count != 2) return;
+        double x = _pointers[0].X - _pointers[1].X;
+        double y = _pointers[0].Y - _pointers[1].Y;
+        _startDist = (float)Math.Sqrt(x * x + y * y);
+        _startScale = PlaceService.Scale;
+    }
+
+    private void OnWheel(WheelEventArgs e)
+    {
+        float scale = PlaceService.Scale;
+        if (e.DeltaY > 0)
+            scale /= 1.25f;
+        else
+            scale *= 1.25f;
+        PlaceService.Scale = Math.Clamp(scale, 3, 48);
+    }
+
+    private void SelectColor(byte i)
+    {
+        _selectedColor = i;
+        _fillPaint.Color = PlaceService.Colors[i];
+    }
+
+    private record Pointer(long Id, double X, double Y)
+    {
+        public double X { get; set; } = X;
+        public double Y { get; set; } = Y;
+    }
+
+    private async void PlaceTile()
+    {
+        if (!IsInsideCanvas) return;
+        int x = PlaceService.X;
+        int y = PlaceService.Y;
+        PlaceService.SetPixel(x, y, _selectedColor);
+        CooldownService.OnTilePlaced();
+        await Server.PlaceTile(x, y, _selectedColor);
+    }
+
+    private bool IsInsideCanvas =>
+        PlaceService.X >= 0 && PlaceService.Xf < PlaceService.Place.Width &&
+        PlaceService.Y >= 0 && PlaceService.Yf < PlaceService.Place.Height;
+    
+    private void OnKeyDown(string key)
+    {
+        switch (key)
+        {
+            case "o":
+                PlaceService.Scale /= 1.25f;
+                break;
+            case "i":
+                PlaceService.Scale *= 1.25f;
+                break;
+        }
+        if (_isAdmin)
+        {
+            switch (key)
+            {
+                case "ArrowLeft":
+                case "a":
+                    PlaceService.Xf -= 1;
+                    break;
+                case "ArrowUp":
+                case "w":
+                    PlaceService.Yf -= 1;
+                    break;
+                case "ArrowRight":
+                case "d":
+                    PlaceService.Xf += 1;
+                    break;
+                case "ArrowDown":
+                case "s":
+                    PlaceService.Yf += 1;
+                    break;
+                case "Enter":
+                case " ":
+                    PlaceTile();
+                    break;
+            }
+        }
+        PlaceService.Scale = Math.Clamp(PlaceService.Scale, 3, 48);
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (!disposing) return;
+
+        CooldownService.RemainingTimeChanged -= OnRemainingTimeChanged;
+        EventService.KeyDown -= OnKeyDown;
+    }
+
+    private string? If(bool condition, string output) => condition ? output : null;
+    
+    private enum OpenMenu
+    {
+        None,
+        Draw,
+        Revert
+    }
+}

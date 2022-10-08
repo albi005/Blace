@@ -1,0 +1,67 @@
+﻿@using Blace.Shared.Models
+@inject StateService StateService
+
+<PageTitle>Blace.Server</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <div class="top-row ps-3 navbar navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="">Blace.Server</a>
+                <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="@(_collapseNavMenu ? "collapse" : null)" @onclick="ToggleNavMenu">
+            <nav class="flex-column">
+                @foreach (State state in _states)
+                {
+                    <div class="nav-item px-3">
+                        <a class="nav-link @(StateService.State == state ? "active" : "")"
+                           @onclick="() => StateService.SetState(state)">
+                            @state
+                        </a>
+                    </div>
+                }
+            </nav>
+        </div>
+    </div>
+
+    <main>
+        <article class="content px-4">
+            @switch (StateService.State)
+            {
+                case State.Place:
+                    <PlaceManagerPage />
+                    break;
+                case State.Vote:
+                    <VoteManager />
+                    break;
+                case State.Quiz:
+                    <QuestionManagerPage />
+                    break;
+                case State.Scoreboard:
+                    <h2>Scoreboard</h2>
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool _collapseNavMenu = true;
+
+    private readonly List<State> _states = new()
+    {
+        State.Place,
+        State.Vote,
+        State.Quiz,
+        State.Scoreboard
+    };
+    
+    private void ToggleNavMenu() => _collapseNavMenu = !_collapseNavMenu;
+}

@@ -1,0 +1,53 @@
+﻿@using Blace.Shared
+@using Blace.Shared.Models
+@inherits HubClientComponent
+
+@inject IServer Server
+
+@switch (_state)
+{
+    case State.Place:
+        <Place />
+        break;
+    case State.Vote:
+        <Vote />
+        break;
+    case State.Quiz:
+        <Quiz />
+        break;
+    case State.Scoreboard:
+        <div class="m-3">
+            <div class="d-flex justify-content-center mb-3">
+                <img
+                    style="max-height: 50vh"
+                    class="img-fluid rounded"
+                    src="img/qr-code.svg" alt=""/>
+            </div>
+            <h1 class="text-white text-center fw-bold my-5">
+                Thank you for playing!
+            </h1>
+            <Scoreboard/>
+        </div>
+        break;
+    case null:
+        break;
+    default:
+        throw new ArgumentOutOfRangeException();
+}
+
+@code
+{
+    private State? _state;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _state = await Server.GetState();
+    }
+
+    public override Task UpdateState(State state)
+    {
+        _state = state;
+        return StateHasChangedTask();
+    }
+}

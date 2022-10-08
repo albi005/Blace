@@ -1,0 +1,44 @@
+﻿@using Blace.Shared.Models
+@using Blace.Client.Services
+@inject HubService HubService
+@inject PlayerService PlayerService
+@implements IDisposable
+
+<div class="bg-white bg-opacity-75 rounded" style="border-bottom-width: 0">
+    <table class="table table-borderless">
+        <thead>
+        <tr>
+            <th scope="col">@PlayerService.PlayersWithName.Count</th>
+            <th scope="col">Name</th>
+            <th scope="col">Score</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (int i = 0; i < PlayerService.PlayersWithName.Count; i++)
+        {
+            Player player = PlayerService.PlayersWithName[i];
+            <tr class="@(player.Id == HubService.UserId ? "table-info" : "")">
+                <th scope="row">@(i + 1).</th>
+                <td>@(player.IsHidden ? "***" : player.Name)</td>
+                <td>@player.Score</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code
+{
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        PlayerService.Changed += ScoreboardServiceOnChanged;
+    }
+
+    public void Dispose()
+    {
+        PlayerService.Changed -= ScoreboardServiceOnChanged;
+    }
+
+    private void ScoreboardServiceOnChanged() => InvokeAsync(StateHasChanged);
+}

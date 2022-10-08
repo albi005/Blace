@@ -1,0 +1,83 @@
+﻿@page "/"
+@using Blace.Shared.Models
+
+@inject QuestionService QuestionService
+@inject PlayerService PlayerService
+
+<h2>Quiz</h2>
+
+<button
+    class="btn btn-primary m-2"
+    @onclick="QuestionService.Reset">
+    Reset
+</button>
+
+<button
+    class="btn btn-primary m-2"
+    @onclick="QuestionService.ShowNext"
+    disabled="@(!QuestionService.CanShowNext)">
+    Next question
+</button>
+
+<button
+    class="btn btn-primary m-2"
+    @onclick="QuestionService.ShowAnswer">
+    Show answer
+</button>
+
+<table class="table table-bordered table-hover">
+    <thead>
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Score</th>
+        <th scope="col"></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (Player player in PlayerService.Current)
+    {
+        Player current = player;
+        <tr>
+            <th scope="row" class="@(current.IsHidden ? "text-decoration-line-through" : "")">@player.Name</th>
+            <td>@player.Score</td>
+            <td>
+                @if (!player.IsHidden)
+                {
+                    <button class="btn btn-danger" @onclick="@(() => HidePlayer(current))">
+                        <span class="oi oi-ban" aria-hidden="true"></span>
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-success" @onclick="@(() => UnhidePlayer(current))">
+                        <span class="oi oi-check" aria-hidden="true"></span>
+                    </button>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code
+{
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        PlayerService.Changed += () => InvokeAsync(StateHasChanged);
+    }
+    
+    private Task HidePlayer(Player player)
+    {
+        player.IsHidden = true;
+        PlayerService.Update();
+        return Task.CompletedTask;
+    }
+
+    private Task UnhidePlayer(Player player)
+    {
+        player.IsHidden = false;
+        PlayerService.Update();
+        return Task.CompletedTask;
+    }
+}

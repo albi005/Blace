@@ -1,0 +1,133 @@
+﻿@using Blace.Shared
+@using Blace.Shared.Models
+@inject PlaceService PlaceService
+@inject IServer Server
+@inject IJSRuntime Js
+
+@if (_tiles != null)
+{
+    <div class="text-center fw-bold mb-2">
+        Start
+        <div class="d-flex justify-content-center gap-2 mb-2">
+            <div class="btn-group">
+                <button @onclick="() => Start -= 40" class="btn btn-primary">-40</button>
+                <button @onclick="() => Start -= 10" class="btn btn-primary">-10</button>
+                <button @onclick="() => Start--" class="btn btn-primary">-</button>
+                <button @onclick="() => Start++" class="btn btn-primary">+</button>
+                <button @onclick="() => Start += 10" class="btn btn-primary">+10</button>
+                <button @onclick="() => Start += 40" class="btn btn-primary">+40</button>
+            </div>
+        </div>
+        End
+        <div class="d-flex justify-content-center gap-2 mb-2">
+            <div class="btn-group">
+                <button @onclick="() => End -= 40" class="btn btn-primary">-40</button>
+                <button @onclick="() => End -= 10" class="btn btn-primary">-10</button>
+                <button @onclick="() => End--" class="btn btn-primary">-</button>
+                <button @onclick="() => End++" class="btn btn-primary">+</button>
+                <button @onclick="() => End += 10" class="btn btn-primary">+10</button>
+                <button @onclick="() => End += 40" class="btn btn-primary">+40</button>
+            </div>
+        </div>
+        @_start-@_end/@_tiles.Length
+    </div>
+}
+
+<div class="d-flex justify-content-center gap-2">
+    <button class="btn btn-danger align-self-start" disabled="@(_end <= _start)" @onclick="Delete">
+        <span class="oi oi-trash"></span>
+    </button>
+    <CloseButton OnClose="() => { End = 0; _tiles = null; }"/>
+    <button class="btn btn-primary" @onclick="Update">
+        <span class="oi oi-magnifying-glass"></span>
+    </button>
+</div>
+
+@code
+{
+    private Tile[]? _tiles;
+    private int _start = 0;
+    private int _end = 0;
+    
+    private int Start
+    {
+        get => _start;
+        set
+        {
+            if (_start == value || _tiles == null) return;
+            value = Math.Clamp(value, 0, _end);
+
+            if (value > _start)
+            {
+                Span<Tile> redo = _tiles.AsSpan(_start..value);
+                for (int i = redo.Length - 1; i >= 0; i--)
+                {
+                    Tile tile = redo[i];
+                    PlaceService.SetPixel(tile.X, tile.Y, tile.Color);
+                }
+            }
+            else
+            {
+                Span<Tile> undo = _tiles.AsSpan(value.._start);
+                foreach (Tile tile in undo)
+                {
+                    PlaceService.SetPixel(tile.X, tile.Y, tile.PreviousColor);
+                }
+            }
+
+            _start = value;
+        }
+    }
+    
+    private int End
+    {
+        get => _end;
+        set
+        {
+            if (_end == value || _tiles == null) return;
+            value = Math.Clamp(value, _start, _tiles.Length);
+
+            if (value > _end)
+            {
+                Span<Tile> undo = _tiles.AsSpan(_end..value);
+                foreach (Tile tile in undo)
+                {
+                    PlaceService.SetPixel(tile.X, tile.Y, tile.PreviousColor);
+                }
+            }
+            else
+            {
+                Span<Tile> redo = _tiles.AsSpan(value.._end);
+                for (int i = redo.Length - 1; i >= 0; i--)
+                {
+                    Tile tile = redo[i];
+                    PlaceService.SetPixel(tile.X, tile.Y, tile.Color);
+                }
+            }
+
+            _end = value;
+        }
+    }
+
+    private async void Update()
+    {
+        Start = 0;
+        End = 0;
+        int x = PlaceService.X;
+        int y = PlaceService.Y;
+        byte color = PlaceService.GetColor(x, y);
+        _tiles = (await Server.GetTilesBySamePlayer(x, y, color))?.ToArray();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Delete()
+    {
+        if (await Js.InvokeAsync<bool>("confirm", "Delete?"))
+        {
+            await Server.DeleteTiles(_tiles.AsSpan(_start.._end).ToArray());
+            _start = 0;
+            _end = 0;
+            _tiles = null;
+        }
+    }
+}

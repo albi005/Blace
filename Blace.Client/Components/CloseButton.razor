@@ -1,0 +1,8 @@
+﻿<button class="btn btn-toolbar" @onclick="() => { CloseMenu.InvokeAsync(); OnClose.InvokeAsync(); }">
+    <span class="oi oi-chevron-bottom"></span>
+</button>
+
+@code {
+    [CascadingParameter(Name = nameof(Menu.CloseMenu))] public EventCallback CloseMenu { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

@@ -1,0 +1,34 @@
+﻿@using Blace.Shared
+@using Blace.Client.Services
+@using Blace.Shared.Models
+@inherits HubClientComponent
+@inject IServer Server
+@inject PlayerService PlayerService
+
+<h1 class="text-white text-center">Quiz</h1>
+<form @onsubmit="SetName">
+    <div class="d-flex flex-column gap-3 bg-white p-3 rounded">
+        <input class="form-control" @bind="_name" placeholder="Name"/>
+        <button class="btn btn-primary" type="submit">Done</button>
+    </div>
+</form>
+
+@code {
+    private string _name = "";
+
+    [Parameter]
+    public EventCallback OnNameSet { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _name = PlayerService.Player.Name ?? "";
+    }
+    
+    private async Task SetName()
+    {
+        PlayerService.Player.Name = _name;
+        await Server.SetName(_name);
+        await OnNameSet.InvokeAsync();
+    }
+}
