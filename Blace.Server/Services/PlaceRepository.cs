@@ -1,4 +1,6 @@
-﻿using Blace.Shared.Models;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
+using Blace.Shared.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
@@ -15,14 +17,16 @@ public class PlaceRepository
 
     public PlaceRepository(IOptions<CosmosDbOptions> options)
     {
-        CosmosClientOptions cosmosOptions = new() { AllowBulkExecution = true };
-        _cosmosClient = new(options.Value.ConnectionString, cosmosOptions);
+        _cosmosClient = new(options.Value.ConnectionString, new() { AllowBulkExecution = true });
     }
 
     public List<PlaceInfo> Places { get; private set; } = null!;
 
     public async Task Initialize()
     {
+        if (_cosmosClient.Endpoint.OriginalString == "https://localhost:8081/")
+            EnsureEmulatorIsRunning();
+        
         _database = await _cosmosClient.CreateDatabaseIfNotExistsAsync(
             "place",
             1000);
@@ -164,5 +168,34 @@ public class PlaceRepository
                 420,
                 response.ActivityId,
                 response.RequestCharge);
+    }
+
+    private static void EnsureEmulatorIsRunning()
+    {
+        if (PingEmulator()) return;
+
+        if (!OperatingSystem.IsWindows()) throw new("CosmosDB emulator is not running.");
+
+        const string emulatorPath = "C:\\Program Files\\Azure Cosmos DB Emulator\\Microsoft.Azure.Cosmos.Emulator.exe";
+        if (!File.Exists(emulatorPath)) throw new($"{emulatorPath} doesn't exist.");
+
+        Process.Start(new ProcessStartInfo(emulatorPath, "/NoExplorer")
+        {
+            UseShellExecute = true,
+            Verb = "runas"
+        });
+        Console.Write("Waiting for CosmosDB emulator to start");
+        while (!PingEmulator()) { Console.Write('.'); }
+        Console.WriteLine("Done");
+    }
+
+    private static bool PingEmulator()
+    {
+        try
+        {
+            new TcpClient("127.0.0.1", 8081).Dispose();
+            return true;
+        }
+        catch (SocketException) { return false; }
     }
 }

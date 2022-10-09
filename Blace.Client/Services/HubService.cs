@@ -16,11 +16,7 @@ public class HubService
         _serviceProvider = serviceProvider;
         Connection = new HubConnectionBuilder()
             .WithUrl(
-                env.BaseAddress.Contains("localhost")
-                    ? "http://localhost:7151/Game"
-                    : env.BaseAddress.Contains("192.168.0.5")
-                        ? "http://192.168.0.5:7151/Game"
-                        : "https://blace-server.azurewebsites.net/Game",
+                GetServerAddress(env) + "Game",
                 o => o.AccessTokenProvider = () => Task.FromResult(UserId.ToString())!)
             .AddMessagePackProtocol()
             .WithAutomaticReconnect()
@@ -28,7 +24,7 @@ public class HubService
         Server = Connection.GetServerProxy<IServer>();
     }
 
-    public HubConnection Connection { get; }
+    private HubConnection Connection { get; }
     public IServer Server { get; }
     public Guid UserId { get; private set; }
 
@@ -50,6 +46,14 @@ public class HubService
 #pragma warning disable IDE0001
     // ReSharper disable once RedundantTypeArgumentsOfMethod
     public IDisposable RegisterClient(IClient client) => Connection.RegisterClient<IClient>(client);
+#pragma warning restore IDE0001
+
+    private static string GetServerAddress(IWebAssemblyHostEnvironment env) =>
+        !env.IsDevelopment()
+            ? "https://blace-server.azurewebsites.net/"
+            : env.BaseAddress.Contains("7150")
+                ? env.BaseAddress.Replace("7150", "7151")
+                : throw new($"Couldn't resolve address of server for base address {env.BaseAddress}");
 }
 
 [AttributeUsage(AttributeTargets.Method)]
