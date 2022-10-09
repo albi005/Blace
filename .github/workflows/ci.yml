@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      
+    - name: Create client appsettings.json
+      run: 'echo "$CLIENT_APPSETTINGS_JSON" > Blace.Client/wwwroot/appsettings.json'
+      shell: bash
+      env:
+        CLIENT_APPSETTINGS_JSON: ${{ secrets.CLIENT_APPSETTINGS_JSON }}
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1

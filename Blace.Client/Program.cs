@@ -5,15 +5,17 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Sentry;
 
-using IDisposable sdk = SentrySdk.Init(o =>
-{
-    o.Dsn = "https://e078f0e3db504ed9ad6d166767887f51@o1311064.ingest.sentry.io/6748344";
-    o.TracesSampleRate = 1.0;
-});
-
 try
 {
     WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
+
+    if (builder.Configuration["Sentry:Dsn"] != null)
+    {
+        SentryOptions sentryOptions = new() { Environment = builder.HostEnvironment.Environment.ToLower() };
+        builder.Configuration.GetSection("Sentry").Bind(sentryOptions);
+        SentrySdk.Init(sentryOptions);
+    }
+
     builder.RootComponents.Add<App>("#app");
     builder.RootComponents.Add<HeadOutlet>("head::after");
 
@@ -42,7 +44,10 @@ try
 }
 catch (Exception e)
 {
-    SentrySdk.CaptureException(e);
-    await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+    if (SentrySdk.IsEnabled)
+    {
+        SentrySdk.CaptureException(e);
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+    }
     throw;
 }

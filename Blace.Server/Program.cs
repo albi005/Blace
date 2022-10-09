@@ -2,6 +2,7 @@ using Blace.Server;
 using Blace.Server.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Identity.Web;
+using Sentry.AspNetCore;
 using Constants = Blace.Server.Constants;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -24,14 +25,15 @@ builder.Services.AddSingleton<QuestionService>();
 builder.Services.AddSingleton<VoteService>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IUserIdProvider, UserIdProvider>();
-builder.WebHost.UseSentry(o =>
-{
-    o.Dsn = "https://2bc57b7722be4f619404cf7fbcec7213@o1311064.ingest.sentry.io/6766716";
-    o.TracesSampleRate = 1.0;
-});
 builder.Services
     .AddSignalR(o => o.MaximumReceiveMessageSize = null)
     .AddMessagePackProtocol();
+
+if (builder.Configuration["Sentry:Dsn"] != null)
+{
+    builder.WebHost.UseSentry(
+        (Action<SentryAspNetCoreOptions>)builder.Configuration.GetSection("Sentry").Bind);
+}
 
 if (builder.Environment.IsDevelopment())
     builder.Services.AddAuthorization(o => o.AddPolicy(Constants.AdminPolicy, p => p.RequireAssertion(_ => true)));
