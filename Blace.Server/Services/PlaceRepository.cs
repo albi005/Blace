@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Blace.Server.Services;
 
-public class PlaceRepository
+public class PlaceRepository : IPlaceRepository
 {
     private readonly CosmosClient _cosmosClient;
     private Database _database = null!;

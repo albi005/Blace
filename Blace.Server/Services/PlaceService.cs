@@ -8,7 +8,7 @@ namespace Blace.Server.Services;
 public class PlaceService
 {
     private readonly IHubContext<Server, IClient> _hub;
-    private readonly PlaceRepository _placeRepository;
+    private readonly IPlaceRepository _placeRepository;
 
     private readonly Throttler _canvasUpdater;
     private readonly Throttler _pixelsUpdater;
@@ -19,7 +19,7 @@ public class PlaceService
     public uint Cooldown { get; private set; }
     public Place Place { get; private set; } = null!;
 
-    public PlaceService(IHubContext<Server, IClient> hub, PlaceRepository placeRepository)
+    public PlaceService(IHubContext<Server, IClient> hub, IPlaceRepository placeRepository)
     {
         _hub = hub;
         _placeRepository = placeRepository;

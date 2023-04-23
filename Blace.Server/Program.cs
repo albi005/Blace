@@ -15,7 +15,12 @@ builder.Services.AddOptions<CosmosDbOptions>()
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddCors();
-builder.Services.AddSingleton<PlaceRepository>();
+
+if (builder.Configuration["CosmosDb:ConnectionString"] != null)
+    builder.Services.AddSingleton<IPlaceRepository, PlaceRepository>();
+else
+    builder.Services.AddSingleton<IPlaceRepository, InMemoryPlaceRepository>();
+
 builder.Services.AddSingleton<PlaceService>();
 builder.Services.AddSingleton<PlayerService>();
 builder.Services.AddSingleton<ScoreboardService>();
@@ -47,7 +52,7 @@ else
 
 WebApplication app = builder.Build();
 
-await app.Services.GetRequiredService<PlaceRepository>().Initialize();
+await app.Services.GetRequiredService<IPlaceRepository>().Initialize();
 await app.Services.GetRequiredService<PlaceService>().Initialize();
 
 if (!app.Environment.IsDevelopment())
