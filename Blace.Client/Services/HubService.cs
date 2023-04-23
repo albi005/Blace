@@ -39,7 +39,7 @@ public class HubService
             await _localStorageService.SetItemAsync(
                 "userid",
                 UserId = Guid.NewGuid());
-        
+        _localStorageService.GetItemAsStringAsync()
         await Connection.StartAsync();
     }
 
