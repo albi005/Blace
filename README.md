@@ -2,7 +2,7 @@
 
 # Blace 
 
-Reddit's r/place recreated using C#.
+Reddit's r/place recreated using C#
 
 ## Running locally
 
