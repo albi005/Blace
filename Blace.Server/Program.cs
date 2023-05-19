@@ -7,18 +7,26 @@ using Constants = Blace.Server.Constants;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOptions<CosmosDbOptions>()
-    .Configure(builder.Configuration.GetSection("CosmosDb").Bind)
-    .ValidateDataAnnotations();
-
-// Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddCors();
 
-if (builder.Configuration["CosmosDb:ConnectionString"] != null)
-    builder.Services.AddSingleton<IPlaceRepository, PlaceRepository>();
-else
+string? connectionString = builder.Configuration["CosmosDb:ConnectionString"];
+if (connectionString != null)
+{
+    try
+    {
+        CosmosDbPlaceRepository repository = new(connectionString);
+        await repository.Initialize();
+        builder.Services.AddSingleton<IPlaceRepository>(repository);
+    }
+    catch (CosmosDbInitException e)
+    {
+        Console.WriteLine("Failed to initialize CosmosDB, storing data in memory instead: " + e.Message);
+        builder.Services.AddSingleton<IPlaceRepository, InMemoryPlaceRepository>();
+    }
+}
+else 
     builder.Services.AddSingleton<IPlaceRepository, InMemoryPlaceRepository>();
 
 builder.Services.AddSingleton<PlaceService>();
@@ -52,7 +60,6 @@ else
 
 WebApplication app = builder.Build();
 
-await app.Services.GetRequiredService<IPlaceRepository>().Initialize();
 await app.Services.GetRequiredService<PlaceService>().Initialize();
 
 if (!app.Environment.IsDevelopment())

@@ -5,7 +5,6 @@ namespace Blace.Server.Services;
 public interface IPlaceRepository
 {
     List<PlaceInfo> Places { get; }
-    Task Initialize();
     Task<Place> Get(string placeId);
     Task Save(Place place);
     Task SaveTiles(IEnumerable<Tile> tiles);

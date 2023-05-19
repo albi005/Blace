@@ -11,8 +11,6 @@ public class InMemoryPlaceRepository : IPlaceRepository
         new Place("the chosen one", "Place 0", DateTime.UtcNow, DateTime.UtcNow, new byte[128 * 128])
     };
     
-    public Task Initialize() => Task.CompletedTask;
-
     public Task<Place> Get(string placeId) => Task.FromResult((Place)Places.First(p => p.Id == placeId));
 
     public Task Save(Place place) => Task.CompletedTask;
