@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Blace.Server.Services;
 
-public class PlaceRepository : IPlaceRepository
+public class CosmosDbPlaceRepository : IPlaceRepository
 {
     private readonly CosmosClient _cosmosClient;
     private Database _database = null!;
@@ -15,9 +15,9 @@ public class PlaceRepository : IPlaceRepository
     private Container _places = null!;
     private Container _deletes = null!;
 
-    public PlaceRepository(IOptions<CosmosDbOptions> options)
+    public CosmosDbPlaceRepository(string connectionString)
     {
-        _cosmosClient = new(options.Value.ConnectionString, new() { AllowBulkExecution = true });
+        _cosmosClient = new(connectionString, new() { AllowBulkExecution = true });
     }
 
     public List<PlaceInfo> Places { get; private set; } = null!;
@@ -174,10 +174,10 @@ public class PlaceRepository : IPlaceRepository
     {
         if (PingEmulator()) return;
 
-        if (!OperatingSystem.IsWindows()) throw new("CosmosDB emulator is not running.");
+        if (!OperatingSystem.IsWindows()) throw new CosmosDbInitException("CosmosDB emulator is not running.");
 
         const string emulatorPath = "C:\\Program Files\\Azure Cosmos DB Emulator\\Microsoft.Azure.Cosmos.Emulator.exe";
-        if (!File.Exists(emulatorPath)) throw new($"{emulatorPath} doesn't exist.");
+        if (!File.Exists(emulatorPath)) throw new CosmosDbInitException($"{emulatorPath} doesn't exist.");
 
         Process.Start(new ProcessStartInfo(emulatorPath, "/NoExplorer")
         {
@@ -198,4 +198,9 @@ public class PlaceRepository : IPlaceRepository
         }
         catch (SocketException) { return false; }
     }
+}
+
+public class CosmosDbInitException : Exception
+{
+    public CosmosDbInitException(string message) : base(message) { }
 }
