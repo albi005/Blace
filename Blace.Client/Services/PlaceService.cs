@@ -18,7 +18,8 @@ public class PlaceService : HubClient
     public Place Place { get; private set; } = null!;
     public SKBitmap Bitmap { get; private set; } = null!;
 
-    public float Scale { get; set; } = 6;
+    public float CurrentScale { get; set; }
+    public float ScaleMultiplier { get; set; } = .9f;
     public int X => (int)Xf;
     public int Y => (int)Yf;
     public float Xf { get; set; }

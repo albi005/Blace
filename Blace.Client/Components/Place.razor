@@ -88,7 +88,7 @@
     </Menu>
 }
 
-@if (!_isDisplay)
+@if (!_isDisplay && !_isPreview)
 {
     <div style="position: fixed; left: 50%; padding: 8px" class="center off-screen-bottom @If(_openMenu == OpenMenu.None, "open")">
         @if (_isAdmin)
@@ -103,22 +103,26 @@
     </div>
 }
 
-<div class="text-white opacity-75 m-2" style="pointer-events: none; width: 33%">
-    <span class="oi oi-person" aria-hidden="true"></span>
-    @PlayerService.Players.Count
+@if (!_isPreview)
+{
+    <div class="text-white opacity-75 m-2" style="pointer-events: none; width: 33%">
+        <span class="oi oi-person" aria-hidden="true"></span>
+        @PlayerService.Players.Count
 
-    @if (_isDisplay)
-    {
-        <h1 style="font-size: 96px">Blace</h1>
-        <p style="font-size: 36px">Open <b>csaka.de</b> in your browser or scan the QR code and <b>draw something!</b></p>
-        <img src="img/qr-code.svg" style="width: 80%" class="mt-5" alt="csaka.de QR code"/>
-    }
-</div>
+        @if (_isDisplay)
+        {
+            <h1 style="font-size: 96px">Blace</h1>
+            <p style="font-size: 36px">Open <b>csaka.de</b> in your browser or scan the QR code and <b>draw something!</b></p>
+            <img src="img/qr-code.svg" style="width: 80%" class="mt-5" alt="csaka.de QR code"/>
+        }
+    </div>
+}
 
 @code
 {
     private bool _isAdmin;
     private bool _isDisplay;
+    private bool _isPreview;
 
     private SKGLView? _view;
     private RevertMenu? _revertMenu;
@@ -146,6 +150,7 @@
 
         _isAdmin = NavigationManager.Uri.Contains("b4f3d864-5792-4ec8-a856-ed6d1d857479");
         _isDisplay = NavigationManager.Uri.Contains("info");
+        _isPreview = NavigationManager.Uri.Contains("preview");
 
         CooldownService.RemainingTimeChanged += OnRemainingTimeChanged;
         EventService.KeyDown += OnKeyDown;
@@ -166,9 +171,15 @@
 
         float x = PlaceService.Xf;
         float y = PlaceService.Yf;
-        float scale = PlaceService.Scale;
         int vw = args.Info.Width;
         int vh = args.Info.Height;
+        int pw = PlaceService.Bitmap.Width;
+        int ph = PlaceService.Bitmap.Height;
+        float maxWScale = vw / (float)pw;
+        float maxHScale = vh / (float)ph;
+        float maxScale = Math.Min(maxWScale, maxHScale);
+        float scale = maxScale * PlaceService.ScaleMultiplier;
+        PlaceService.CurrentScale = scale;
 
         canvas.Translate(vw / 2f - scale * x, vh / 2f - scale * y);
         canvas.Scale(scale);
@@ -191,7 +202,7 @@
     private float _startClientX;
     private float _startClientY;
     private float _startDist;
-    private float _startScale;
+    private float _startScaleMultiplier;
     private readonly List<Pointer> _pointers = new();
 
     private void OnPointerDown(PointerEventArgs e)
@@ -211,15 +222,15 @@
         float avgY = (float)_pointers.Average(p => p.Y);
         float deltaX = _startClientX - avgX;
         float deltaY = _startClientY - avgY;
-        PlaceService.Xf = _startX + deltaX / PlaceService.Scale;
-        PlaceService.Yf = _startY + deltaY / PlaceService.Scale;
+        PlaceService.Xf = _startX + deltaX / PlaceService.CurrentScale;
+        PlaceService.Yf = _startY + deltaY / PlaceService.CurrentScale;
 
         if (_pointers.Count != 2) return;
         double x = _pointers[0].X - _pointers[1].X;
         double y = _pointers[0].Y - _pointers[1].Y;
         float dist = (float)Math.Sqrt(x * x + y * y);
         float percentChange = dist / _startDist;
-        PlaceService.Scale = Math.Clamp(_startScale * percentChange, 3, 48);
+        PlaceService.ScaleMultiplier = Math.Clamp(_startScaleMultiplier * percentChange, 3, 48);
     }
 
     private void OnPointerUp(PointerEventArgs e)
@@ -242,17 +253,17 @@
         double x = _pointers[0].X - _pointers[1].X;
         double y = _pointers[0].Y - _pointers[1].Y;
         _startDist = (float)Math.Sqrt(x * x + y * y);
-        _startScale = PlaceService.Scale;
+        _startScaleMultiplier = PlaceService.ScaleMultiplier;
     }
 
     private void OnWheel(WheelEventArgs e)
     {
-        float scale = PlaceService.Scale;
+        float scale = PlaceService.ScaleMultiplier;
         if (e.DeltaY > 0)
-            scale /= 1.25f;
+            scale /= 1.1f;
         else
-            scale *= 1.25f;
-        PlaceService.Scale = Math.Clamp(scale, 3, 48);
+            scale *= 1.1f;
+        PlaceService.ScaleMultiplier = Math.Clamp(scale, .7f, 10);
     }
 
     private void SelectColor(byte i)
@@ -286,10 +297,10 @@
         switch (key)
         {
             case "o":
-                PlaceService.Scale /= 1.25f;
+                PlaceService.ScaleMultiplier /= 1.25f;
                 break;
             case "i":
-                PlaceService.Scale *= 1.25f;
+                PlaceService.ScaleMultiplier *= 1.25f;
                 break;
         }
         if (_isAdmin)
@@ -318,7 +329,7 @@
                     break;
             }
         }
-        PlaceService.Scale = Math.Clamp(PlaceService.Scale, 3, 48);
+        PlaceService.ScaleMultiplier = Math.Clamp(PlaceService.ScaleMultiplier, .7f, 10);
         InvokeAsync(StateHasChanged);
     }
 
