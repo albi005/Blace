@@ -90,10 +90,10 @@
 
 @if (!_isDisplay)
 {
-    <div class="d-flex justify-content-center p-2 gap-2 off-screen-bottom @If(_openMenu == OpenMenu.None, "open")">
+    <div style="position: fixed; left: 50%; padding: 8px" class="center off-screen-bottom @If(_openMenu == OpenMenu.None, "open")">
         @if (_isAdmin)
         {
-            <button class="btn btn-danger" @onclick="() => _openMenu = OpenMenu.Revert">
+            <button class="btn btn-danger me-2" @onclick="() => _openMenu = OpenMenu.Revert">
                 <span class="oi oi-ban"></span>
             </button>
         }

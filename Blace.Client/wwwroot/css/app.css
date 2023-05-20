@@ -124,13 +124,16 @@ a, .btn-link {
 }
 
 .off-screen-bottom {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
     transform: translateY(100%);
     transition-duration: 600ms;
 }
+
+    .off-screen-bottom.center {
+        transform: translate(-50%, 100%);
+    }
 
 .menu {
     position: absolute;
@@ -145,3 +148,7 @@ a, .btn-link {
 .open {
     transform: translateY(0%) !important;
 }
+
+    .open.center {
+        transform: translate(-50%, 0%) !important;
+    }
