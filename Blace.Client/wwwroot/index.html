@@ -1,7 +1,7 @@
 <!--
 Made by Albert Ragány-Németh
 
-https://github.com/albi005
+https://alb1.hu
 -->
 
 <!DOCTYPE html>
@@ -36,6 +36,10 @@ https://github.com/albi005
 <script>
     document.addEventListener('keydown', function (e){
         DotNet.invokeMethod('Blace.Client', 'OnKeyDown', e.key);
+    });
+
+    document.getElementById('app').addEventListener('wheel', function (e){
+        e.preventDefault();
     });
 </script>
 </body>

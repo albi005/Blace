@@ -230,7 +230,7 @@
         double y = _pointers[0].Y - _pointers[1].Y;
         float dist = (float)Math.Sqrt(x * x + y * y);
         float percentChange = dist / _startDist;
-        PlaceService.ScaleMultiplier = Math.Clamp(_startScaleMultiplier * percentChange, 3, 48);
+        PlaceService.ScaleMultiplier = _startScaleMultiplier * percentChange;
     }
 
     private void OnPointerUp(PointerEventArgs e)
@@ -258,12 +258,10 @@
 
     private void OnWheel(WheelEventArgs e)
     {
-        float scale = PlaceService.ScaleMultiplier;
         if (e.DeltaY > 0)
-            scale /= 1.1f;
+            PlaceService.ScaleMultiplier /= 1.25f;
         else
-            scale *= 1.1f;
-        PlaceService.ScaleMultiplier = Math.Clamp(scale, .7f, 10);
+            PlaceService.ScaleMultiplier *= 1.25f;
     }
 
     private void SelectColor(byte i)
@@ -329,7 +327,6 @@
                     break;
             }
         }
-        PlaceService.ScaleMultiplier = Math.Clamp(PlaceService.ScaleMultiplier, .7f, 10);
         InvokeAsync(StateHasChanged);
     }
 

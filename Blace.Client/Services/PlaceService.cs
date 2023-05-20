@@ -9,6 +9,7 @@ public class PlaceService : HubClient
     private readonly IServer _server;
 
     private uint[] _bitmapData = null!;
+    private float _scaleMultiplier = 1;
 
     public PlaceService(IServer server)
     {
@@ -19,7 +20,13 @@ public class PlaceService : HubClient
     public SKBitmap Bitmap { get; private set; } = null!;
 
     public float CurrentScale { get; set; }
-    public float ScaleMultiplier { get; set; } = .9f;
+
+    public float ScaleMultiplier
+    {
+        get => _scaleMultiplier;
+        set => _scaleMultiplier = Math.Clamp(value, .64f, 16);
+    }
+
     public int X => (int)Xf;
     public int Y => (int)Yf;
     public float Xf { get; set; }
