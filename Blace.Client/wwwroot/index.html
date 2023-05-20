@@ -20,11 +20,11 @@ https://alb1.hu
 <div class="background"></div>
 
 <div id="app">
-    <div class="d-flex justify-content-center p-5">
-        <div class="spinner-border text-white" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    </div>
+    <svg class="loading-progress">
+        <circle r="40%" cx="50%" cy="50%" />
+        <circle r="40%" cx="50%" cy="50%" />
+    </svg>
+    <div class="loading-progress-text"></div>
 </div>
 
 <div id="blazor-error-ui">
