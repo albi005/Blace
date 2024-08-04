@@ -55,7 +55,7 @@ else
     Environment.SetEnvironmentVariable("WEBSITE_AUTH_DEFAULT_PROVIDER", "AAD");
     builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
         .EnableTokenAcquisitionToCallDownstreamApi();
-    builder.Services.AddAuthorization(o => o.AddPolicy(Constants.AdminPolicy, p => p.RequireClaim("roles", "Admin")));
+    builder.Services.AddAuthorization(o => o.AddPolicy(Constants.AdminPolicy, p => p.RequireAuthenticatedUser()));
 }
 
 WebApplication app = builder.Build();
