@@ -3,7 +3,6 @@ using Blace.Client;
 using Blace.Client.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Sentry;
 
 try
 {

@@ -43,7 +43,7 @@ jobs:
       with:
         app-name: blace-server
         publish-profile: ${{ secrets.SERVER_PUBLISH_PROFILE }}
-        package: Blace.Server/bin/Release/net7.0/publish
+        package: Blace.Server/bin/Release/net8.0/publish
 
     - name: Deploy Client
       uses: Azure/static-web-apps-deploy@v1
@@ -51,5 +51,5 @@ jobs:
         azure_static_web_apps_api_token: ${{ secrets.CLIENT_DEPLOYMENT_TOKEN }}
         action: upload
         skip_app_build: true
-        app_location: Blace.Client/bin/Release/net7.0/publish/wwwroot
+        app_location: Blace.Client/bin/Release/net8.0/publish/wwwroot
         output_location: ''

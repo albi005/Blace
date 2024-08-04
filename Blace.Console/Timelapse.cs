@@ -23,7 +23,7 @@ public static class Timelapse
         using VideoWriter writer = new("1080.avi", FourCC.DIVX, 144, new(1080, 1080));
         Rgb[] arr = new Rgb[128 * 128];
         Array.Fill<Rgb>(arr, 0xFF_FFFF);
-        using Mat mat = new(128, 128, MatType.CV_8UC3, arr);
+        using Mat mat = Mat.FromPixelData(128, 128, MatType.CV_8UC3, arr);
         using Mat resized = new();
 
         int i = 0;

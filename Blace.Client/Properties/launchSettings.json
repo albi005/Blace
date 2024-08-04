@@ -3,9 +3,9 @@
     "Blace.Client": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
+      "launchBrowser": false,
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
-      "applicationUrl": "http://localhost:7150;http://*:7150",
+      "applicationUrl": "http://0.0.0.0:7150",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

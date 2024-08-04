@@ -62,6 +62,11 @@ WebApplication app = builder.Build();
 
 await app.Services.GetRequiredService<PlaceService>().Initialize();
 
+app.UseCors(cors => cors
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -72,11 +77,6 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseRouting();
-
-app.UseCors(cors => cors
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
 
 if (!app.Environment.IsDevelopment())
 {

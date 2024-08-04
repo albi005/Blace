@@ -3,7 +3,7 @@
     "Blace.Server": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:7151;http://*:7151",
+      "applicationUrl": "http://localhost:7151",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
