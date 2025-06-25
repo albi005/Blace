@@ -73,9 +73,10 @@ public class Server : Hub<IClient>, IServer
         }
     }
 
-    [Authorize(Constants.AdminPolicy)]
     public async Task DeleteTiles(Tile[] tiles)
     {
+        if (_playerService[Context].Id != _placeService.AdminUserId)
+            return;
         await _placeService.DeleteTiles(tiles);
     }
 

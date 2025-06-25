@@ -16,6 +16,7 @@ public class PlaceService
     private readonly ConcurrentQueue<Tile> _tiles = new();
     private readonly ConcurrentDictionary<Guid, byte> _bannedPlayers = new();
 
+    internal Guid AdminUserId { get; } = Guid.NewGuid();
     public uint Cooldown { get; private set; }
     public Place Place { get; private set; } = null!;
 

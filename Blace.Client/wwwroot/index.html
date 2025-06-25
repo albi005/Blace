@@ -33,6 +33,17 @@ https://alb1.hu
     <a class="dismiss">🗙</a>
 </div>
 
+<script>
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    const userId = getQueryParam('id');
+
+    if (userId)
+        localStorage.setItem('userid', JSON.stringify(userId));
+</script>
 <script src="_framework/blazor.webassembly.js"></script>
 <script>
     document.addEventListener('keydown', function (e){
