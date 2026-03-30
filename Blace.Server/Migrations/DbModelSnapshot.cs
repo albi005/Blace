@@ -22,7 +22,7 @@ namespace Blace.Server.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Blace.Shared.Models.Delete", b =>
+            modelBuilder.Entity("Blace.Server.Data.Entities.DeleteEntity", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(450)
@@ -36,22 +36,23 @@ namespace Blace.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Deletes");
+                    b.ToTable("deletes", (string)null);
                 });
 
-            modelBuilder.Entity("Blace.Shared.Models.PlaceInfo", b =>
+            modelBuilder.Entity("Blace.Server.Data.Entities.PlaceEntity", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
 
+                    b.Property<byte[]>("Canvas")
+                        .HasColumnType("bytea");
+
                     b.Property<DateTime>("CreatedTimeUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
+                    b.Property<int>("Height")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("LastChangeTimeUtc")
                         .HasColumnType("timestamp with time zone");
@@ -61,16 +62,15 @@ namespace Blace.Server.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("Width")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.ToTable("places", (string)null);
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("PlaceInfo");
-
-                    b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("Blace.Shared.Models.Tile", b =>
+            modelBuilder.Entity("Blace.Server.Data.Entities.TileEntity", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(450)
@@ -113,23 +113,7 @@ namespace Blace.Server.Migrations
 
                     b.HasIndex("PlaceId", "X", "Y");
 
-                    b.ToTable("Tiles");
-                });
-
-            modelBuilder.Entity("Blace.Shared.Models.Place", b =>
-                {
-                    b.HasBaseType("Blace.Shared.Models.PlaceInfo");
-
-                    b.Property<byte[]>("Canvas")
-                        .HasColumnType("bytea");
-
-                    b.Property<int>("Height")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Width")
-                        .HasColumnType("integer");
-
-                    b.HasDiscriminator().HasValue("Place");
+                    b.ToTable("tiles", (string)null);
                 });
 #pragma warning restore 612, 618
         }

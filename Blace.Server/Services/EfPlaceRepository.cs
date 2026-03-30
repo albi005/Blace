@@ -1,4 +1,5 @@
 using Blace.Server.Data;
+using Blace.Server.Data.Mapping;
 using Blace.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,24 +12,30 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
     public async Task Initialize()
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
+
         await db.Database.MigrateAsync();
-        
+
         Places = await db.Places
             .OrderByDescending(p => p.CreatedTimeUtc)
-            .Cast<PlaceInfo>()
+            .Select(p => new PlaceInfo(
+                p.Id,
+                p.Title,
+                p.CreatedTimeUtc,
+                p.LastChangeTimeUtc))
             .ToListAsync();
     }
 
     public async Task<Place> Get(string placeId)
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
-        Place? place = await db.Places.FindAsync(placeId);
-        if (place == null)
+
+        var placeEntity = await db.Places.FindAsync(placeId);
+        if (placeEntity == null)
         {
             throw new InvalidOperationException($"Place with ID '{placeId}' not found.");
         }
+
+        Place place = placeEntity.ToModel();
 
         // Handle legacy data where Width might be 0
         if (place.Width == 0)
@@ -42,9 +49,9 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
     public async Task Save(Place place)
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
+
         // Get existing title if it exists
-        Place? existing = await db.Places.FindAsync(place.Id);
+        var existing = await db.Places.FindAsync(place.Id);
         if (existing != null)
         {
             place.Title = existing.Title;
@@ -54,16 +61,16 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
 
         if (existing != null)
         {
-            db.Entry(existing).CurrentValues.SetValues(place);
+            db.Entry(existing).CurrentValues.SetValues(place.ToEntity());
         }
         else
         {
-            db.Places.Add(place);
+            db.Places.Add(place.ToEntity());
             Places.Add(place);
         }
 
         await db.SaveChangesAsync();
-        
+
         // Update in-memory list
         PlaceInfo? existingInfo = Places.FirstOrDefault(p => p.Id == place.Id);
         existingInfo?.LastChangeTimeUtc = place.LastChangeTimeUtc;
@@ -72,19 +79,19 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
     public async Task SaveTiles(IEnumerable<Tile> tiles)
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
-        await db.Tiles.AddRangeAsync(tiles);
+
+        await db.Tiles.AddRangeAsync(tiles.Select(t => t.ToEntity()));
         await db.SaveChangesAsync();
     }
 
     public async Task Delete(PlaceInfo place)
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
-        PlaceInfo? existing = await db.Places.FindAsync(place.Id);
+
+        var existing = await db.Places.FindAsync(place.Id);
         if (existing != null)
         {
-            db.Places.Remove((Place)existing);
+            db.Places.Remove(existing);
             await db.SaveChangesAsync();
             Places.Remove(place);
         }
@@ -93,24 +100,37 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
     public async Task<List<Tile>> GetTilesBySamePlayer(int x, int y, byte color, string placeId)
     {
         await using Db db = await dbContextFactory.CreateDbContextAsync();
-        
+
         // Find the last tile at the specified position with the specified color
-        Tile? lastTile = await db.Tiles
+        var lastTileEntity = await db.Tiles
             .Where(t => t.PlaceId == placeId && t.Color == color && t.X == x && t.Y == y && t.DeleteId == null)
             .OrderByDescending(t => t.CreatedTimeUtc)
             .FirstOrDefaultAsync();
 
-        if (lastTile == null)
+        if (lastTileEntity == null)
         {
             throw new TileNotFoundException();
         }
 
-        Guid userId = lastTile.UserId;
+        Guid userId = lastTileEntity.UserId;
 
         // Get all tiles by the same user in the same place that are not deleted
         List<Tile> tiles = await db.Tiles
             .Where(t => t.PlaceId == placeId && t.UserId == userId && t.DeleteId == null)
             .OrderByDescending(t => t.CreatedTimeUtc)
+            .Select(t => new Tile(
+                    t.Id,
+                    t.CreatedTimeUtc,
+                    t.PlaceId,
+                    t.UserId,
+                    t.X,
+                    t.Y,
+                    t.Color,
+                    t.PreviousColor)
+                {
+                    DeleteId = t.DeleteId,
+                }
+            )
             .ToListAsync();
 
         return tiles;
@@ -132,12 +152,12 @@ public class EfPlaceRepository(IDbContextFactory<Db> dbContextFactory) : IPlaceR
 
         // Create a delete record
         Delete delete = new(Guid.NewGuid().ToString(), DateTime.UtcNow, userId);
-        await db.Deletes.AddAsync(delete);
+        await db.Deletes.AddAsync(delete.ToEntity());
 
         // Update all tiles with the delete ID (soft delete)
         foreach (Tile tile in tiles)
         {
-            Tile? existingTile = await db.Tiles.FindAsync(tile.Id);
+            var existingTile = await db.Tiles.FindAsync(tile.Id);
             existingTile?.DeleteId = delete.Id;
         }
 

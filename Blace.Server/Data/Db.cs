@@ -1,27 +1,31 @@
-using Blace.Shared.Models;
+using Blace.Server.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blace.Server.Data;
 
 public class Db(DbContextOptions<Db> options) : DbContext(options)
 {
-    public DbSet<Place> Places { get; set; } = null!;
-    public DbSet<Tile> Tiles { get; set; } = null!;
-    public DbSet<Delete> Deletes { get; set; } = null!;
+    public DbSet<PlaceEntity> Places { get; set; } = null!;
+    public DbSet<TileEntity> Tiles { get; set; } = null!;
+    public DbSet<DeleteEntity> Deletes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Place>(entity =>
+        // Configure Place entity
+        modelBuilder.Entity<PlaceEntity>(entity =>
         {
+            entity.ToTable("places");
             entity.Property(p => p.Id).HasMaxLength(450);
             entity.Property(p => p.Title).HasMaxLength(200);
             entity.Property(p => p.Canvas).HasColumnType("bytea");
         });
 
-        modelBuilder.Entity<Tile>(entity =>
+        // Configure Tile entity
+        modelBuilder.Entity<TileEntity>(entity =>
         {
+            entity.ToTable("tiles");
             entity.Property(t => t.Id).HasMaxLength(450);
             entity.Property(t => t.PlaceId).HasMaxLength(450);
             entity.Property(t => t.DeleteId).HasMaxLength(450);
@@ -32,16 +36,11 @@ public class Db(DbContextOptions<Db> options) : DbContext(options)
             entity.HasIndex(t => t.DeleteId);
         });
 
-        modelBuilder.Entity<Delete>(entity =>
+        // Configure Delete entity
+        modelBuilder.Entity<DeleteEntity>(entity =>
         {
+            entity.ToTable("deletes");
             entity.Property(d => d.Id).HasMaxLength(450);
-        });
-
-        modelBuilder.Entity<PlaceInfo>(entity =>
-        {
-            entity.ToTable("places");
-            entity.Property(p => p.Id).HasMaxLength(450);
-            entity.Property(p => p.Title).HasMaxLength(200);
         });
     }
 }

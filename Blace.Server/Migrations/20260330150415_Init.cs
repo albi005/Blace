@@ -12,7 +12,7 @@ namespace Blace.Server.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Deletes",
+                name: "deletes",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "character varying(450)", maxLength: 450, nullable: false),
@@ -21,7 +21,7 @@ namespace Blace.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Deletes", x => x.Id);
+                    table.PrimaryKey("PK_deletes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -29,13 +29,12 @@ namespace Blace.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "character varying(450)", maxLength: 450, nullable: false),
-                    CreatedTimeUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    CreatedTimeUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastChangeTimeUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Discriminator = table.Column<string>(type: "character varying(13)", maxLength: 13, nullable: false),
                     Canvas = table.Column<byte[]>(type: "bytea", nullable: true),
-                    Height = table.Column<int>(type: "integer", nullable: true),
-                    Width = table.Column<int>(type: "integer", nullable: true)
+                    Height = table.Column<int>(type: "integer", nullable: false),
+                    Width = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -43,7 +42,7 @@ namespace Blace.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tiles",
+                name: "tiles",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "character varying(450)", maxLength: 450, nullable: false),
@@ -58,27 +57,27 @@ namespace Blace.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tiles", x => x.Id);
+                    table.PrimaryKey("PK_tiles", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tiles_DeleteId",
-                table: "Tiles",
+                name: "IX_tiles_DeleteId",
+                table: "tiles",
                 column: "DeleteId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tiles_PlaceId",
-                table: "Tiles",
+                name: "IX_tiles_PlaceId",
+                table: "tiles",
                 column: "PlaceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tiles_PlaceId_UserId",
-                table: "Tiles",
+                name: "IX_tiles_PlaceId_UserId",
+                table: "tiles",
                 columns: new[] { "PlaceId", "UserId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tiles_PlaceId_X_Y",
-                table: "Tiles",
+                name: "IX_tiles_PlaceId_X_Y",
+                table: "tiles",
                 columns: new[] { "PlaceId", "X", "Y" });
         }
 
@@ -86,13 +85,13 @@ namespace Blace.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Deletes");
+                name: "deletes");
 
             migrationBuilder.DropTable(
                 name: "places");
 
             migrationBuilder.DropTable(
-                name: "Tiles");
+                name: "tiles");
         }
     }
 }
